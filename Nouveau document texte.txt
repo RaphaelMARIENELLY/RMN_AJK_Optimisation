@@ -1,0 +1,4 @@
+Premiere matrice = coup
+Seconde matrice = distances
+
+calcul de fitness de solution voisine a faire en n. attention ne pas tour recalculer. faire juste ce qui change.
