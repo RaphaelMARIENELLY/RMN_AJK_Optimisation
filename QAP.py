@@ -92,7 +92,7 @@ def random_solution(n):
     return sol
 
 
-def neighbourhood(sol):
+def neighbourhood(sol, tabou=[]):
     """Generate the neighbourhood of the solution sol
 
     Parameters:
@@ -104,8 +104,9 @@ def neighbourhood(sol):
     neighbourhood = []
     for i in range(len(sol)):
         for j in range(i):
-            neighbourhood.append(sol[::])
-            neighbourhood[-1][i], neighbourhood[-1][j] = neighbourhood[-1][j], neighbourhood[-1][i]
+            if not([i,j] in tabou or [j, i] in tabou):
+                neighbourhood.append(sol[::])
+                neighbourhood[-1][i], neighbourhood[-1][j] = neighbourhood[-1][j], neighbourhood[-1][i]
     return neighbourhood
 
 
@@ -141,11 +142,15 @@ def init_parameters(n, d, w, mu):
 
 
 def simulated_annealing(n, d, w, sol, t, n1, n2, mu):
+    print("Parametres : n="+str(n)+" t0="+str(t)+" mu="+str(mu)+" n1="+str(n1)+" n2="+str(n2))
     sol_fitness = fitness(n, d, w, sol)
     best_sol = sol[::]
     best_fitness = fitness(n, d, w, best_sol)
     step = 0
     for i_n1 in range(n1):
+        """print("Move n1 = "+str(i_n1))
+        print(best_sol)
+        print(best_fitness)"""
         for i_n2 in range(n2):
             new_sol = random_neighbour(sol)
             new_fitness = fitness(n, d, w, new_sol)
@@ -159,24 +164,78 @@ def simulated_annealing(n, d, w, sol, t, n1, n2, mu):
                 if p <= math.exp(-delta_fitness/t):
                     sol = new_sol[::]
         t *= mu
+        #print()
     return [best_sol, best_fitness]
 
 
-# MAIN
-data = init_data("tai12a.txt")
-n = data[0]
-d = data[1]
-w = data[2]
-display_data(n, d, w)
+def tabou(n, d, w, sol, length, maxIter):
+    """ DOC TODO """
+    sol_fitness = fitness(n, d, w, sol)
+    tabou = []
+    best_solution = sol[::]
+    best_fitness = fitness(n, d, w, sol)
 
-mu = 0.9
-parameters = init_parameters(n, d, w, mu)
-s0 = parameters[0]
-t0 = parameters[1]
-n1 = parameters[2]
-n2 = parameters[3]
+    for iter in range(maxIter):
+        # Selection
+        candidates = neighbourhood(sol, tabou)
+        best_candidate_fitness = math.inf
+        for candidate in candidates:
+            candidate_fitness = fitness(n, d, w, candidate)
+            if candidate_fitness < best_candidate_fitness:
+                best_candidate_fitness, best_candidate = candidate_fitness, candidate[::]
 
-solution = simulated_annealing(n, d, w, s0, t0, n1, n2, mu)
-print("Solution "+ str(solution[0]) + " fitness:"+ str(solution[1]))
+        # Delta
+        delta = best_candidate_fitness - sol_fitness
+        if delta > 0:
+            m = permutation(sol, best_candidate)
+            tabou.append(permutation(sol, best_candidate))
+            if len(tabou) < length:
+                tabou = tabou[1::]
 
-print("fitness min tai12a=224416 , test [8,1,6,2,11,10,3,5,9,7,12,4], "+str(fitness(n, d, w, [7, 0, 5, 1, 10, 9, 2, 4, 8, 6, 11, 3], True)))
+        # Update
+        sol = best_candidate[::]
+        sol_fitness = best_candidate_fitness
+        if best_candidate_fitness < sol_fitness:
+            best_fitness = best_candidate_fitness
+            best_solution = best_candidate[::]
+
+    return [best_solution, best_fitness]
+
+def permutation(sol1, sol2):
+    """Doc TODO"""
+    m = []
+    for i in range(len(sol1)):
+        if sol1[i] != sol2[i]:
+            m.append(i)
+    return m
+
+def test_simulated_annealing():
+    data = init_data("tai12a.txt")
+    n = data[0]
+    d = data[1]
+    w = data[2]
+    #display_data(n, d, w)
+
+    mu = 0.9
+    parameters = init_parameters(n, d, w, mu)
+    s0 = parameters[0]
+    t0 = parameters[1]
+    n1 = parameters[2]
+    n2 = parameters[3]
+
+    solution = simulated_annealing(n, d, w, s0, t0, n1, n2, mu)
+    print("Simutaled Annealing : Solution "+ str(solution[0]) + " fitness:"+ str(solution[1]))
+
+def test_tabou():
+    data = init_data("tai12a.txt")
+    n = data[0]
+    d = data[1]
+    w = data[2]
+    #display_data(n, d, w)
+
+    solution = tabou(n, d, w, random_solution(n), 10, 1000)
+    print("Tabou : Solution " + str(solution[0]) + " fitness:" + str(solution[1]))
+
+test_simulated_annealing()
+print()
+test_tabou()
