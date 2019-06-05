@@ -27,9 +27,10 @@ def graphiquexls(fname, coordonnees):
     col = 0
 
     # Iterate over the data and write it out row by row.
-    for size, fitness in (coordonnees):
+    for size, solutions in (coordonnees):
         worksheet.write(row, col, size)
-        worksheet.write(row, col + 1, fitness)
+        for i in range(len(solutions)):
+            worksheet.write(row, col + 1 + i, solutions[i])
         row += 1
 
     workbook.close()
