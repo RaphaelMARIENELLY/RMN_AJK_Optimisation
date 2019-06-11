@@ -1,6 +1,6 @@
 import random
 import math
-
+import time
 
 def init_data(file_name):
     """Extract data from the text file
@@ -49,15 +49,17 @@ def display_data(n, d, w):
         w (list): The weight matrix
     """
     print(str(n) + "\n")
-    for w_row in w:
-        print(w_row)
-    print("")
+
     for d_row in d:
         print(d_row)
     print("")
 
+    for w_row in w:
+        print(w_row)
+    print("")
 
-def fitness(n, d, w, sol):
+
+def fitness(n, d, w, sol, i_nbh, nbh=[], f=0):
     """Calculate the fitness of a solution
 
     Parameters:
@@ -69,15 +71,67 @@ def fitness(n, d, w, sol):
     Returns:
         f (int): The calculated fitness of the solution
     """
+    if i_nbh in [1, 2] and nbh != []:
+        return fitness_plus(n, d, w, sol, nbh, f)
+    return fitness_sym(n, d, w, sol)
+
+
+def fitness_sym(n, d, w, sol):
+    """Calculate the fitness of a solution
+
+    Parameters:
+        n (int): The matrix size
+        d (list): The  symetric distance matrix
+        w (list): The weight matrix
+        sol (list): The solution. sol[n_spot] = n_equipment
+
+    Returns:
+        f (int): The calculated fitness of the solution
+    """
     f = 0
     for i_row in range(n):
-        for i_col in range(n):
+        for i_col in range(i_row + 1, n):
             delta = d[i_row][i_col] * w[sol[i_row]][sol[i_col]]
             f += delta
+    return f*2
+
+
+def fitness_plus(n, d, w, nbh, sol, f):
+    """Calculate the fitness of a solution
+
+    Parameters:
+        n (int): The matrix size
+        d (list): The  symetric distance matrix
+        w (list): The weight matrix
+        sol (list): The solution. sol[n_spot] = n_equipment
+
+    Returns:
+        f (int): The calculated fitness of the solution
+    """
+    [emp1, emp2] = get_transposition(n, sol, nbh)
+    minus , plus = 0, 0
+    for emp in range(n):
+        minus += d[emp1][emp] * w[sol[emp1]][sol[emp]]
+        plus += d[emp1][emp] * w[nbh[emp1]][nbh[emp]]
+
+        minus += d[emp2][emp] * w[sol[emp2]][sol[emp]]
+        plus += d[emp2][emp] * w[nbh[emp2]][nbh[emp]]
+
+    f = f - minus *2
+    f = f + plus *2
     return f
 
 
-def random_solution(n, nbh):
+def get_transposition(n, sol, nbh):
+    r = []
+    for idx in range(n):
+        if sol[idx] != nbh[idx]:
+            r.append(idx)
+            if len(r) == 2:
+                return r
+
+
+def random_solution(n):
     """Generate a random solution with a size of n
 
     Parameters:
@@ -96,8 +150,7 @@ def random_solution(n, nbh):
     return sol
 
 
-
-def neighbourhood(sol, nbh, tabou=[]):
+def neighbourhood(sol, i_nbh, tabou=[]):
     """Generate the neighbourhood of the solution sol with the nbh neighbourhood
 
     Parameters:
@@ -107,15 +160,17 @@ def neighbourhood(sol, nbh, tabou=[]):
         neighbourhood (list): The list of the neighbourhood of sol
     """
     neighbourhood = []
-    if nbh == 1:
-        return neighbourhood1(sol, tabou)
-    if nbh == 2:
+    if i_nbh == 1:
+        return swap_nbhood(sol, tabou)
+    if i_nbh == 2:
         return neighbourhood2(sol, tabou)
+    if i_nbh == 3:
+        return cycle_nbhood(sol, tabou)
     return neighbourhood
 
 
-def neighbourhood1(sol, tabou=[]):
-    """Generate the neighbourhood of the solution sol
+def swap_nbhood(sol, tabou=[]):
+    """Generate the neighbourhood of the solution sol by swapping 2 equipmments
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
@@ -153,7 +208,7 @@ def neighbourhood2(sol, tabou=[]):
     return neighbourhood
 
 
-def neighbourhood3(sol, tabou=[]):
+def cycle_nbhood(sol, tabou=[]):
     """Generate the neighbourhood of the solution sol
 
     Parameters:
@@ -173,7 +228,8 @@ def neighbourhood3(sol, tabou=[]):
             neighbourhood.append(neighbour)
     return neighbourhood
 
-def random_neighbour(sol, nbh):
+
+def random_neighbour(sol, i_nbh):
     """Choose a random element from the neighbourhood of the solution sol
 
     Parameters:
@@ -182,7 +238,19 @@ def random_neighbour(sol, nbh):
     Returns:
         neighbourhood (list): The list of the neighbourhood of sol
     """
-    return random.choice(neighbourhood(sol, nbh))
+    if i_nbh in [1,2]:
+        emp1 = random.randint(0,len(sol))
+        emp2 = random.randint(0,len(sol))
+        while emp1 == emp2:
+            emp2 = random.randint(0, len(sol))
+        nbh = sol[::]
+        nbh[emp1], nbh[emp2] = nbh[emp2], nbh[emp1]
+        return nbh
+
+    i = random.randint(0, len(sol))
+    h = sol[:len(sol) - 1 + i:]
+    t = sol[len(sol) - 1 + i::]
+    return t + h
 
 
 def init_parameters(n, d, w, mu):
@@ -231,13 +299,13 @@ def simulated_annealing(n, d, w, sol, t, n1, n2, mu):
     return [best_sol, best_fitness]
 
 
-def tabou(n, d, w, sol, length, maxIter, nbh):
+def tabou(n, d, w, sol, size_t, maxIter, nbh):
     """ DOC TODO """
-    nb_fitness = 0
-    sol_fitness, nb_fitness = fitness(n, d, w, sol), nb_fitness + 1
+    call_fitness = 0
+    sol_fitness, call_fitness = fitness_sym(n, d, w, sol), call_fitness + 1
     tabou = []
     best_solution = sol[::]
-    best_fitness, nb_fitness = fitness(n, d, w, sol), nb_fitness + 1
+    best_fitness, call_fitness = fitness(n, d, w, sol), call_fitness + 1
 
     best_candidate = sol[::]
 
@@ -247,7 +315,7 @@ def tabou(n, d, w, sol, length, maxIter, nbh):
 
         best_candidate_fitness = math.inf
         for candidate in candidates:
-            candidate_fitness, nb_fitness = fitness(n, d, w, candidate), nb_fitness + 1
+            candidate_fitness, call_fitness = fitness(n, d, w, candidate), call_fitness + 1
             if candidate_fitness < best_candidate_fitness:
                 best_candidate_fitness, best_candidate = candidate_fitness, candidate[::]
 
@@ -258,7 +326,7 @@ def tabou(n, d, w, sol, length, maxIter, nbh):
                 tabou.append(permutation(sol, best_candidate))
             elif nbh == 3:
                 tabou.append(cycle(sol, best_candidate))
-            if len(tabou) > length:
+            if len(tabou) > size_t:
                 tabou = tabou[1::]
 
         # Update
@@ -277,7 +345,7 @@ def tabou(n, d, w, sol, length, maxIter, nbh):
         print(best_fitness)
         print("\n\n")
         """
-    return [best_solution, best_fitness, nb_fitness]
+    return [best_solution, best_fitness, call_fitness]
 
 
 def permutation(sol1, sol2):
@@ -287,6 +355,7 @@ def permutation(sol1, sol2):
         if sol1[i] != sol2[i]:
             m.append(i)
     return m
+
 
 def cycle(sol1, sol2):
     for i in range(len(sol1)):
