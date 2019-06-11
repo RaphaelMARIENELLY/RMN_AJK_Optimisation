@@ -57,7 +57,7 @@ def display_data(n, d, w):
     print("")
 
 
-def fitness(n, d, w, sol, display=False):
+def fitness(n, d, w, sol):
     """Calculate the fitness of a solution
 
     Parameters:
@@ -86,9 +86,13 @@ def random_solution(n, nbh):
     Returns:
         sol (list): A random solution with a size of n
     """
-    sol = [equipment for equipment in range(n)]
-    for i in range(n**2):
-        sol = random_neighbour(sol, nbh)
+    choix = [equipment for equipment in range(n)]
+    sol = []
+
+    for i in range(n):
+        e = random.choice(choix)
+        sol.append(e)
+        choix.remove(e)
     return sol
 
 
@@ -143,6 +147,9 @@ def neighbourhood2(sol, tabou=[]):
         if not([i, i+1] in tabou or [i+1, i] in tabou):
             neighbourhood.append(sol[::])
             neighbourhood[-1][i], neighbourhood[-1][i+1] = neighbourhood[-1][i+1], neighbourhood[-1][i]
+    if not ([0, len(sol)-1] in tabou or [len(sol)-1, 0] in tabou):
+        neighbourhood.append(sol[::])
+        neighbourhood[-1][len(sol)-1], neighbourhood[-1][0] = neighbourhood[-1][0], neighbourhood[-1][len(sol)-1]
     return neighbourhood
 
 
@@ -158,15 +165,16 @@ def neighbourhood3(sol, tabou=[]):
     neighbourhood = []
 
     for i in range(len(sol)):
-        h = sol[:len(sol)-1+i:]
-        t = sol[len(sol)-1+i::]
-        neighbour = t + h
-        #TODO TABOU
-        neighbourhood.append(neighbour)
+        if i not in tabou:
+            h = sol[:len(sol)-1+i:]
+            t = sol[len(sol)-1+i::]
+            neighbour = t + h
+            #TODO TABOU
+            neighbourhood.append(neighbour)
     return neighbourhood
 
 def random_neighbour(sol, nbh):
-    """Choose a random element rom the neighbourhood of the solution sol
+    """Choose a random element from the neighbourhood of the solution sol
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
@@ -231,9 +239,12 @@ def tabou(n, d, w, sol, length, maxIter, nbh):
     best_solution = sol[::]
     best_fitness, nb_fitness = fitness(n, d, w, sol), nb_fitness + 1
 
+    best_candidate = sol[::]
+
     for iter in range(maxIter):
         # Selection
         candidates = neighbourhood(sol, nbh, tabou)
+
         best_candidate_fitness = math.inf
         for candidate in candidates:
             candidate_fitness, nb_fitness = fitness(n, d, w, candidate), nb_fitness + 1
@@ -243,8 +254,10 @@ def tabou(n, d, w, sol, length, maxIter, nbh):
         # Delta
         delta = best_candidate_fitness - sol_fitness
         if delta > 0:
-            m = permutation(sol, best_candidate)
-            tabou.append(permutation(sol, best_candidate))
+            if nbh in [1, 2]:
+                tabou.append(permutation(sol, best_candidate))
+            elif nbh == 3:
+                tabou.append(cycle(sol, best_candidate))
             if len(tabou) > length:
                 tabou = tabou[1::]
 
@@ -274,3 +287,8 @@ def permutation(sol1, sol2):
         if sol1[i] != sol2[i]:
             m.append(i)
     return m
+
+def cycle(sol1, sol2):
+    for i in range(len(sol1)):
+        if sol1[0] == sol2[i]:
+            return i

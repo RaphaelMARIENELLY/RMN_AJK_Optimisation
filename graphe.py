@@ -1,26 +1,15 @@
-import csv
-
 import xlsxwriter
 
-
-def graphique(fname, coordonnees) :
-    file = open(fname+".csv", "w")
-    try:
-        writer = csv.writer(file)
-        writer.writerow(("Taille", "Fitness"))
-        """for coord in coordonnees:
-            writer.writerow(coord)
-            """
-    finally:
-        file.close()
-
 def graphiquexls(fname, coordonnees):
+    """
+    Ecrit les données dans un csv.
+    """
+
     # Create a workbook and add a worksheet.
     workbook = xlsxwriter.Workbook(fname+".xlsx")
     worksheet = workbook.add_worksheet()
 
     # Start from the first cell. Rows and columns are zero indexed.
-
     worksheet.write(0, 0, "Taille")
     worksheet.write(0, 1, "Fitness")
     row = 1
