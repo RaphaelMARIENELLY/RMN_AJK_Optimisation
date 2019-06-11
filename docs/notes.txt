@@ -1,0 +1,10 @@
+Premiere matrice = coup
+Seconde matrice = distances
+
+calcul de fitness de solution voisine a faire en n. attention ne pas tour recalculer. 
+faire juste ce qui change.
+
+rapport etude temps de calculs
+nb d appel a la fct objectif
+complexité
+comparer avec marche aleatoire
