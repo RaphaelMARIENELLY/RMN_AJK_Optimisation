@@ -1,9 +1,17 @@
-calcul de fitness de solution voisine a faire en n. attention ne pas tour recalculer. 
 
-rapport etude temps de calculs fitness / algo
+resultats : 
+comparer les complexités
 
-nb d appel a la fct objectif
+Pour chaque jeu de donnée :
+	- graphe pour chaque maxiter des fitness en fct de la taille de tabou (1 courbe = 1 voisinage)
+	- fitness en fonction de p_to (recuit)
+	- fitness en fct de p_n1 (recuit)
+	- fitness en fct de u (recuit)
 
-complexité
+temps d execution de la fitness sur le voisin d une solution pour chaque taille
+meilleur fitness tabou et recuit  et marche aléatoire sur chaque jeu de donnée
+meilleur temps d execution sur ces resutats sur chaque jeu de donnée
 
-comparer avec marche aleatoire
+
+
+

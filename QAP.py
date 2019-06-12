@@ -120,9 +120,10 @@ def cycle_nbr(sol, move):
     Returns:
         nbr (list): The neighbour of sol by move
     """
-    h = sol[:len(sol)-1+move:]
-    t = sol[len(sol)-1+move::]
-    return t + h
+    h = sol[:move:]
+    t = sol[move::]
+    m = int(len(t)/2)
+    return h + t[m::] + t[:m:]
 
 
 def get_cycle(n, sol1, nbr):
@@ -150,14 +151,14 @@ def random_neighbour(sol, i_nbhood):
     Returns:
         neighbourhood (list): The list of the neighbourhood of sol
     """
-    if i_nbhood in [1,2]:
+    if i_nbhood in [1, 2]:
         emp1 = random.randint(0,len(sol))
         emp2 = random.randint(0,len(sol))
         while emp1 == emp2:
             emp2 = random.randint(0, len(sol))
         return swap_nbr(sol, [emp1, emp2])
 
-    move = random.randint(0, len(sol))
+    move = random.randint(1, len(sol))
     return cycle_nbr(sol, move)
 
 
@@ -326,28 +327,27 @@ def init_parameters(n, d, w, mu, p_t0, p_n1):
     return [s0, t0, n1, n2]
 
 
-def simulated_annealing(n, d, w, sol, t, n1, n2, mu):
+def simulated_annealing(n, d, w, sol, t, n1, n2, mu, i_nbhood):
     print("Parametres : n="+str(n)+" t0="+str(t)+" mu="+str(mu)+" n1="+str(n1)+" n2="+str(n2))
-    sol_fitness = fitness(n, d, w, sol)
+    sol_fitness = fitness(n, d, w, sol, 1)
     best_sol = sol[::]
-    best_fitness = fitness(n, d, w, best_sol)
-    step = 0
+    best_fitness = fitness(n, d, w, best_sol, i_nbhood)
+
     for i_n1 in range(n1):
-        """print("Move n1 = "+str(i_n1))
-        print(best_sol)
-        print(best_fitness)"""
         for i_n2 in range(n2):
-            new_sol = random_neighbour(sol)
-            new_fitness = fitness(n, d, w, new_sol)
+            new_sol = random_neighbour(sol, i_nbhood)
+            new_fitness = fitness(n, d, w, new_sol, i_nbhood, sol, sol_fitness)
             delta_fitness = new_fitness - sol_fitness
             if delta_fitness >= 0:
                 sol = new_sol[::]
+                sol_fitness = new_fitness
                 if new_fitness > best_fitness:
                     best_sol, best_fitness = new_sol[::], new_fitness
             else:
                 p = random.random()
                 if p <= math.exp(-delta_fitness/t):
                     sol = new_sol[::]
+                    sol_fitness = new_fitness
         t *= mu
     return [best_sol, best_fitness]
 
@@ -358,27 +358,27 @@ def tabou(n, d, w, sol, size_t, maxIter, i_nbhood):
     sol_fitness, call_fitness = fitness_sym(n, d, w, sol), call_fitness + 1
 
     best_solution = sol[::]
-    best_fitness, call_fitness = fitness(n, d, w, sol), call_fitness + 1
+    best_fitness, call_fitness = fitness(n, d, w, sol, 1), call_fitness + 1
 
     best_candidate = sol[::]
 
     for iter in range(maxIter):
         # Selection
-        candidates = neighbourhood(sol, nbh, tabou)
+        candidates = neighbourhood(sol, i_nbhood, tabou)
 
         best_candidate_fitness = math.inf
         for candidate in candidates:
-            candidate_fitness, call_fitness = fitness(n, d, w, candidate), call_fitness + 1
+            candidate_fitness, call_fitness = fitness(n, d, w, candidate, i_nbhood, sol, sol_fitness), call_fitness + 1
             if candidate_fitness < best_candidate_fitness:
                 best_candidate_fitness, best_candidate = candidate_fitness, candidate[::]
 
         # Delta
         delta = best_candidate_fitness - sol_fitness
         if delta > 0:
-            if nbh in [1, 2]:
-                tabou.append(permutation(sol, best_candidate))
-            elif nbh == 3:
-                tabou.append(cycle(sol, best_candidate))
+            if i_nbhood in [1, 2]:
+                tabou.append(get_swap(n, sol, best_candidate))
+            elif i_nbhood == 3:
+                tabou.append(get_cycle(n, sol, best_candidate))
             if len(tabou) > size_t:
                 tabou = tabou[1::]
 
@@ -386,7 +386,7 @@ def tabou(n, d, w, sol, size_t, maxIter, i_nbhood):
         sol = best_candidate[::]
         sol_fitness = best_candidate_fitness
 
-        if sol_fitness< best_fitness:
+        if sol_fitness < best_fitness:
             best_fitness = sol_fitness
             best_solution = sol[::]
 

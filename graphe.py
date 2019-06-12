@@ -1,5 +1,6 @@
 import xlsxwriter
 
+
 def graphiquexls(fname, coordonnees):
     """
     Ecrit les données dans un csv.
@@ -16,10 +17,9 @@ def graphiquexls(fname, coordonnees):
     col = 0
 
     # Iterate over the data and write it out row by row.
-    for size, solutions in (coordonnees):
+    for size, solutions in coordonnees:
         worksheet.write(row, col, size)
         for i in range(len(solutions)):
             worksheet.write(row, col + 1 + i, solutions[i])
         row += 1
-
     workbook.close()

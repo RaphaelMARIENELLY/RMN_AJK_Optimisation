@@ -59,14 +59,18 @@ for file in files:
     test_tabou_size(file, 1000)
     """
 
-data = init_data("tai100a.txt")
+data = init_data("tai15a.txt")
 n = data[0]
 d = data[1]
 w = data[2]
 
 sol = random_solution(n)
-nbh = random_neighbour(sol, 1)
+nbr = random_neighbour(sol, 3)
 
+print(sol)
+print(nbr)
+
+"""
 fit = fitness_sym(n, d, w, sol)
 print(fit)
 i_test = 1000
@@ -83,3 +87,4 @@ d2 = t3-t2
 print("durée sym "+str(d1))
 print("durée plus "+str(d2))
 print("rapport " + str(d1/d2))
+"""
