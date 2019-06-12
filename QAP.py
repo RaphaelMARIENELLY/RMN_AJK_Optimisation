@@ -1,6 +1,5 @@
 import random
 import math
-import time
 
 def init_data(file_name):
     """Extract data from the text file
@@ -59,29 +58,135 @@ def display_data(n, d, w):
     print("")
 
 
-def fitness(n, d, w, sol, i_nbh, nbh=[], f=0):
-    """Calculate the fitness of a solution
+def random_solution(n):
+    """Generate a random solution with a size of n
+
+    Parameters:
+        n (int): The size of the solution
+
+    Returns:
+        sol (list): A random solution with a size of n
+    """
+    elements = [e for e in range(n)]
+    sol = []
+    for i in range(n):
+        e = random.choice(elements)
+        sol.append(e)
+        elements.remove(e)
+    return sol
+
+
+def swap_nbr(sol, move):
+    """Generate the neighbour of the solution sol by swapping 2 equipments which are located in move spots
+
+    Parameters:
+        sol (list): The solution. sol[n_spot] = n_equipment
+        move (list): The spots to swap
+
+    Returns:
+        nbr (list): The neighbour of sol
+    """
+    nbr = sol[::]
+    nbr[move[0]], nbr[move[1]] = nbr[move[1]], nbr[move[0]]
+    return nbr
+
+
+def get_swap(n, sol, nbr):
+    """Return the swap between sol and nbr
+
+        Parameters:
+            n(int): len of sol
+            sol (list): The solution. sol[n_spot] = n_equipment
+            nbr (list): A neighbour of sol1
+
+            Returns:
+                move (int): The move
+            """
+    move = []
+    for idx in range(n):
+        if sol[idx] != nbr[idx]:
+            move.append(idx)
+            if len(move) == 2:
+                return move
+
+
+def cycle_nbr(sol, move):
+    """Generate the neighbour of the solution sol by a circular permutation
+
+    Parameters:
+        sol (list): The solution. sol[n_spot] = n_equipment
+        move (int): The index of the move
+
+    Returns:
+        nbr (list): The neighbour of sol by move
+    """
+    h = sol[:len(sol)-1+move:]
+    t = sol[len(sol)-1+move::]
+    return t + h
+
+
+def get_cycle(n, sol1, nbr):
+    """Return the move by a circular permutation between sol and nbr
+
+    Parameters:
+        n(int): len of sol
+        sol1 (list): The solution. sol[n_spot] = n_equipment
+        nbr (list): A neighbour of sol1
+
+        Returns:
+            move (int): The move
+        """
+    for i in range(n):
+        if sol1[0] == nbr[i]:
+            return i
+
+
+def random_neighbour(sol, i_nbhood):
+    """Choose a random element from the neighbourhood of the solution sol
+
+    Parameters:
+        sol (list): The solution. sol[n_spot] = n_equipment
+
+    Returns:
+        neighbourhood (list): The list of the neighbourhood of sol
+    """
+    if i_nbhood in [1,2]:
+        emp1 = random.randint(0,len(sol))
+        emp2 = random.randint(0,len(sol))
+        while emp1 == emp2:
+            emp2 = random.randint(0, len(sol))
+        return swap_nbr(sol, [emp1, emp2])
+
+    move = random.randint(0, len(sol))
+    return cycle_nbr(sol, move)
+
+
+def fitness(n, d, w, sol, i_nbhood, nbr=[], f=0):
+    """Calculate the fitness of a solution depending on i_nbh
 
     Parameters:
         n (int): The matrix size
         d (list): The distance matrix
         w (list): The weight matrix
         sol (list): The solution. sol[n_spot] = n_equipment
+        i_nbhood (int) : = 1 or 2 -> permutation, =3 -> cycle
+        nbr (list): the previous neighbour
+        f (int) : the previous neighbour fitness
 
     Returns:
         f (int): The calculated fitness of the solution
     """
-    if i_nbh in [1, 2] and nbh != []:
-        return fitness_plus(n, d, w, sol, nbh, f)
+    if i_nbhood in [1, 2] and nbr != []:
+        return fitness_plus(n, d, w, sol, nbr, f)
     return fitness_sym(n, d, w, sol)
 
 
 def fitness_sym(n, d, w, sol):
-    """Calculate the fitness of a solution
+    """Calculate the fitness of a solution with d symetric
 
     Parameters:
         n (int): The matrix size
-        d (list): The  symetric distance matrix
+        d (list): The  symmetric distance matrix
         w (list): The weight matrix
         sol (list): The solution. sol[n_spot] = n_equipment
 
@@ -96,177 +201,126 @@ def fitness_sym(n, d, w, sol):
     return f*2
 
 
-def fitness_plus(n, d, w, nbh, sol, f):
-    """Calculate the fitness of a solution
+def fitness_plus(n, d, w, nbr, sol, f):
+    """Calculate the fitness of a solution depending on its neighbour fitness
 
     Parameters:
         n (int): The matrix size
-        d (list): The  symetric distance matrix
+        d (list): The  symmetric distance matrix
         w (list): The weight matrix
-        sol (list): The solution. sol[n_spot] = n_equipment
+        nbr (list): The solution. sol[n_spot] = n_equipment
+        sol (list): the previous neighbour
+        f (int) : the previous neighbour fitness
 
     Returns:
         f (int): The calculated fitness of the solution
     """
-    [emp1, emp2] = get_transposition(n, sol, nbh)
+    [emp1, emp2] = get_swap(n, sol, nbr)
     minus , plus = 0, 0
     for emp in range(n):
         minus += d[emp1][emp] * w[sol[emp1]][sol[emp]]
-        plus += d[emp1][emp] * w[nbh[emp1]][nbh[emp]]
-
+        plus += d[emp1][emp] * w[nbr[emp1]][nbr[emp]]
         minus += d[emp2][emp] * w[sol[emp2]][sol[emp]]
-        plus += d[emp2][emp] * w[nbh[emp2]][nbh[emp]]
-
-    f = f - minus *2
-    f = f + plus *2
+        plus += d[emp2][emp] * w[nbr[emp2]][nbr[emp]]
+    f = f - minus * 2  # Because d is symmetric
+    f = f + plus * 2
     return f
 
 
-def get_transposition(n, sol, nbh):
-    r = []
-    for idx in range(n):
-        if sol[idx] != nbh[idx]:
-            r.append(idx)
-            if len(r) == 2:
-                return r
-
-
-def random_solution(n):
-    """Generate a random solution with a size of n
-
-    Parameters:
-        n (int): The size of the solution
-
-    Returns:
-        sol (list): A random solution with a size of n
-    """
-    choix = [equipment for equipment in range(n)]
-    sol = []
-
-    for i in range(n):
-        e = random.choice(choix)
-        sol.append(e)
-        choix.remove(e)
-    return sol
-
-
-def neighbourhood(sol, i_nbh, tabou=[]):
+def neighbourhood(sol, i_nbhood, tabou=[]):
     """Generate the neighbourhood of the solution sol with the nbh neighbourhood
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
+        i_nbhood (int) : = 1 or 2 -> permutation, =3 -> cycle
+        tabou (list): a tabou list with banned moves
 
     Returns:
         neighbourhood (list): The list of the neighbourhood of sol
     """
-    neighbourhood = []
-    if i_nbh == 1:
+    if i_nbhood == 1:
         return swap_nbhood(sol, tabou)
-    if i_nbh == 2:
-        return neighbourhood2(sol, tabou)
-    if i_nbh == 3:
+    if i_nbhood == 2:
+        return swap_nbhood_bis(sol, tabou)
+    if i_nbhood == 3:
         return cycle_nbhood(sol, tabou)
-    return neighbourhood
+    return []
 
 
 def swap_nbhood(sol, tabou=[]):
-    """Generate the neighbourhood of the solution sol by swapping 2 equipmments
+    """Generate the neighbourhood of the solution sol by swapping 2 equipments of sol
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
+        tabou (list): a tabou list with banned moves
 
     Returns:
-        neighbourhood (list): The list of the neighbourhood of sol
+        nbhood (list): The list of the neighbourhood of sol
     """
-    neighbourhood = []
+    nbhood = []
     for i in range(len(sol)):
         for j in range(i):
-            if not([i,j] in tabou or [j, i] in tabou):
-                neighbourhood.append(sol[::])
-                neighbourhood[-1][i], neighbourhood[-1][j] = neighbourhood[-1][j], neighbourhood[-1][i]
-    return neighbourhood
+            if not([i, j] in tabou or [j, i] in tabou):
+                nbhood.append(swap_nbr(sol, [i, j]))
+    return nbhood
 
 
-def neighbourhood2(sol, tabou=[]):
-    """Generate the neighbourhood of the solution sol
+def swap_nbhood_bis(sol, tabou=[]):
+    """Generate the neighbourhood of the solution sol by swapping 2 consecutive equipments of sol
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
+        tabou (list): a tabou list with banned moves
 
     Returns:
-        neighbourhood (list): The list of the neighbourhood of sol
+        nbhood (list): The list of the neighbourhood of sol
     """
-    neighbourhood = []
+    nbhood = []
 
     for i in range(len(sol)-1):
         if not([i, i+1] in tabou or [i+1, i] in tabou):
-            neighbourhood.append(sol[::])
-            neighbourhood[-1][i], neighbourhood[-1][i+1] = neighbourhood[-1][i+1], neighbourhood[-1][i]
-    if not ([0, len(sol)-1] in tabou or [len(sol)-1, 0] in tabou):
-        neighbourhood.append(sol[::])
-        neighbourhood[-1][len(sol)-1], neighbourhood[-1][0] = neighbourhood[-1][0], neighbourhood[-1][len(sol)-1]
-    return neighbourhood
+            nbhood.append(swap_nbr(sol, [i, i+1]))
+    n = len(sol)
+    if not ([0, n-1] in tabou or [n-1, 0] in tabou):
+        nbhood.append(swap_nbr(sol, [0, n-1]))
+    return nbhood
 
 
 def cycle_nbhood(sol, tabou=[]):
-    """Generate the neighbourhood of the solution sol
+    """Generate the neighbourhood of the solution sol by a circular permutation
 
     Parameters:
         sol (list): The solution. sol[n_spot] = n_equipment
+        tabou (list): a tabou list with banned moves
 
     Returns:
-        neighbourhood (list): The list of the neighbourhood of sol
+        nbhood (list): The list of the neighbourhood of sol
     """
-    neighbourhood = []
-
-    for i in range(len(sol)):
-        if i not in tabou:
-            h = sol[:len(sol)-1+i:]
-            t = sol[len(sol)-1+i::]
-            neighbour = t + h
-            #TODO TABOU
-            neighbourhood.append(neighbour)
-    return neighbourhood
+    nbhood = []
+    n = len(sol)
+    for move in range(1, n):
+        if move not in tabou:
+            nbhood.append(cycle_nbr(sol, move))
+    return nbhood
 
 
-def random_neighbour(sol, i_nbh):
-    """Choose a random element from the neighbourhood of the solution sol
-
-    Parameters:
-        sol (list): The solution. sol[n_spot] = n_equipment
-
-    Returns:
-        neighbourhood (list): The list of the neighbourhood of sol
-    """
-    if i_nbh in [1,2]:
-        emp1 = random.randint(0,len(sol))
-        emp2 = random.randint(0,len(sol))
-        while emp1 == emp2:
-            emp2 = random.randint(0, len(sol))
-        nbh = sol[::]
-        nbh[emp1], nbh[emp2] = nbh[emp2], nbh[emp1]
-        return nbh
-
-    i = random.randint(0, len(sol))
-    h = sol[:len(sol) - 1 + i:]
-    t = sol[len(sol) - 1 + i::]
-    return t + h
-
-
-def init_parameters(n, d, w, mu):
+def init_parameters(n, d, w, mu, p_t0, p_n1):
     s0 = random_solution(n)
+    f0 = fitness_sym(n, d, w, s0)
     # Init t0
     max_delta_fitness = 0
     n_positive = 0
-    while n_positive < n**2:
-        delta_fitness = fitness(n, d, w, random_neighbour(s0)) - fitness(n, d, w, s0)
+    while n_positive < n:
+        delta_fitness = fitness(n, d, w, random_neighbour(s0, 1), 1, s0, f0) - f0
         if delta_fitness > 0:
             n_positive += 1
             if max_delta_fitness < delta_fitness:
                 max_delta_fitness = delta_fitness
-    t0 = - max_delta_fitness / math.log(0.8)
+    t0 = - max_delta_fitness / math.log(p_t0)
+
     # Init n1
-    n1 = int(math.log(-max_delta_fitness / (t0*math.log(0.01))) / math.log(mu))
+    n1 = int(math.log(-max_delta_fitness / (t0*math.log(p_n1))) / math.log(mu))
+
     # Init n2
     n2 = n1  # TODO
     return [s0, t0, n1, n2]
@@ -295,15 +349,14 @@ def simulated_annealing(n, d, w, sol, t, n1, n2, mu):
                 if p <= math.exp(-delta_fitness/t):
                     sol = new_sol[::]
         t *= mu
-        #print()
     return [best_sol, best_fitness]
 
 
-def tabou(n, d, w, sol, size_t, maxIter, nbh):
+def tabou(n, d, w, sol, size_t, maxIter, i_nbhood):
     """ DOC TODO """
-    call_fitness = 0
+    tabou, call_fitness = [], 0
     sol_fitness, call_fitness = fitness_sym(n, d, w, sol), call_fitness + 1
-    tabou = []
+
     best_solution = sol[::]
     best_fitness, call_fitness = fitness(n, d, w, sol), call_fitness + 1
 
@@ -348,16 +401,5 @@ def tabou(n, d, w, sol, size_t, maxIter, nbh):
     return [best_solution, best_fitness, call_fitness]
 
 
-def permutation(sol1, sol2):
-    """Doc TODO"""
-    m = []
-    for i in range(len(sol1)):
-        if sol1[i] != sol2[i]:
-            m.append(i)
-    return m
 
 
-def cycle(sol1, sol2):
-    for i in range(len(sol1)):
-        if sol1[0] == sol2[i]:
-            return i
