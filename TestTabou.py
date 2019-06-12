@@ -4,19 +4,25 @@ import time
 
 
 def test_tabou_size(n, d, w, sol, file, max_iter):
-    dir = "data/"
+    dir = "data/tai_" +str(n)+"a_"
     donnees = []
-    for size_t in range(0, 21, 1):
+
+    info = "iter:" + str(max_iter) + "    file:"+file +"    start:" + str(sol)
+    print(info)
+    fichier_i = open(dir+".txt", "a")
+    fichier_i.write(info + "\n")
+    fichier_i.close()
+
+    for size_t in range(0, 41, 5):
+        if size_t % 10 == 0:
+            print("T:" + str(size_t))
         t1 = time.time()
         solution1 = tabou(n, d, w, sol, size_t, max_iter, 1)
         t2 = time.time()
         d1 = t2-t1
 
-        info = "maxIter:" + str(max_iter) + " Size : " + str(size_t) + " Solution1 " + str(solution1[0]) + " fitness:" \
-               + str(solution1[1]) + " Nb Appel fitness : " + str(solution1[2]) + "    durée: " + str(d1)
-        print(info)
-
-        fichier_i = open(dir + "test1_" + file, "a")
+        info = "V1 T: "+ str(size_t) + "   f:" + str(solution1[1]) + "   nb_f:" + str(solution1[2])+"    time: " + str(d1)
+        fichier_i = open(dir+".txt", "a")
         fichier_i.write(info+"\n")
         fichier_i.close()
 
@@ -26,11 +32,9 @@ def test_tabou_size(n, d, w, sol, file, max_iter):
         solution2 = tabou(n, d, w, sol, size_t, max_iter, 2)
         t2 = time.time()
         d2 = t2 - t1
-        info = "maxIter:" + str(max_iter) + " Size : " + str(size_t) + " Solution2 " + str(solution2[0]) + " fitness:" \
-               + str(solution2[1]) + " Nb Appel fitness : " + str(solution2[2]) + "    durée: " + str(d2)
-        print(info)
+        info = "V2 T: "+ str(size_t) + "   f:" + str(solution2[1]) + "   nb_f:" + str(solution2[2])+"    time: " + str(d2)
 
-        fichier_i = open(dir + "test2_" + file, "a")
+        fichier_i = open(dir+".txt", "a")
         fichier_i.write(info+"\n")
         fichier_i.close()
 
@@ -40,11 +44,9 @@ def test_tabou_size(n, d, w, sol, file, max_iter):
         solution3 = tabou(n, d, w, sol, size_t, max_iter, 3)
         t2 = time.time()
         d3 = t2 - t1
-        info = "maxIter:" + str(max_iter) + " Size : " + str(size_t) + " Solution3 " + str(solution3[0]) + " fitness:"\
-               + str(solution3[1]) + " Nb Appel fitness : " + str(solution3[2]) + "    durée: " + str(d3)
-        print(info)
+        info = "V3 T: "+ str(size_t) + "   f:" + str(solution3[1]) + "   nb_f:" + str(solution3[2])+"    time: " + str(d3)
 
-        fichier_i = open(dir + "test3_" +file, "a")
+        fichier_i = open(dir+".txt", "a")
         fichier_i.write(info + "\n")
         fichier_i.close()
 
@@ -52,7 +54,7 @@ def test_tabou_size(n, d, w, sol, file, max_iter):
 
         donnees.append((size_t, [solution1[1], solution2[1], solution3[1]]))
 
-    graphiquexls(dir + file + "Iter" + str(max_iter), donnees)
+    graphiquexls(dir + str(max_iter), donnees)
 
 
 def test_tabou_iter():
@@ -60,19 +62,17 @@ def test_tabou_iter():
     files = ["tai12a.txt", "tai15a.txt", "tai17a.txt", "tai20a.txt", "tai25a.txt", "tai30a.txt", "tai35a.txt",
              "tai40a.txt", "tai50a.txt", "tai60a.txt", "tai80a.txt", "tai100a.txt"]
 
-    for file in files:
-        data = init_data(file)
-        n = data[0]
-        d = data[1]
-        w = data[2]
-        # display_data(n, d, w)
+    start_sol = [random_solution(size) for size in [12, 15, 17, 20, 25, 30, 35, 40, 50, 60, 80, 100]]
+    print("START SOL : " + str(start_sol))
 
-        sol = random_solution(n)
+    for maxiter in [100, 1000, 10000]:
+        for i_file in range(len(files)):
+            data = init_data(files[i_file])
+            n = data[0]
+            d = data[1]
+            w = data[2]
 
-        print("depart des tests : "+str(sol))
-        test_tabou_size(n, d, w, sol, file, 10)
-        test_tabou_size(n, d, w, sol, file, 100)
-        #test_tabou_size(n, d, w, sol, file, 1000)
+            test_tabou_size(n, d, w, start_sol[i_file], files[i_file], maxiter)
 
 
 def test_fitness():
