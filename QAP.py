@@ -87,6 +87,8 @@ def swap_nbr(sol, move):
         nbr (list): The neighbour of sol
     """
     nbr = sol[::]
+    if len(move) != 2 or move[0] >= len(sol) or move[1] >= len(sol):
+        print("ERREUR MOVE = "+str(move))
     nbr[move[0]], nbr[move[1]] = nbr[move[1]], nbr[move[0]]
     return nbr
 
@@ -152,13 +154,13 @@ def random_neighbour(sol, i_nbhood):
         neighbourhood (list): The list of the neighbourhood of sol
     """
     if i_nbhood in [1, 2]:
-        emp1 = random.randint(0,len(sol))
-        emp2 = random.randint(0,len(sol))
+        emp1 = random.randint(0,len(sol)-1)
+        emp2 = random.randint(0,len(sol)-1)
         while emp1 == emp2:
-            emp2 = random.randint(0, len(sol))
+            emp2 = random.randint(0, len(sol)-1)
         return swap_nbr(sol, [emp1, emp2])
 
-    move = random.randint(1, len(sol))
+    move = random.randint(1, len(sol)-1)
     return cycle_nbr(sol, move)
 
 
@@ -352,7 +354,7 @@ def simulated_annealing(n, d, w, sol, t, n1, n2, mu, i_nbhood):
     return [best_sol, best_fitness]
 
 
-def tabou(n, d, w, sol, size_t, maxIter, i_nbhood):
+def tabou(n, d, w, sol, size_t, max_iter, i_nbhood):
     """ DOC TODO """
     tabou, call_fitness = [], 0
     sol_fitness, call_fitness = fitness_sym(n, d, w, sol), call_fitness + 1
@@ -362,7 +364,7 @@ def tabou(n, d, w, sol, size_t, maxIter, i_nbhood):
 
     best_candidate = sol[::]
 
-    for iter in range(maxIter):
+    for iter in range(max_iter):
         # Selection
         candidates = neighbourhood(sol, i_nbhood, tabou)
 
